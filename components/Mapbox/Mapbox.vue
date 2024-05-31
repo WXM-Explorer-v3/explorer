@@ -34,6 +34,9 @@
     return display.smAndDown.value
   })
 
+  const viewMode = computed(() => mapboxStore.viewMode);
+
+
   const navButtonsStyles = computed(() => {
     return {
       '--top-color': theme.current.value.colors.top,
@@ -101,6 +104,21 @@
   watch(initMapPositonEvent, (val, newVal) => {
     if (val !== newVal) {
       mapsInitialPosition()
+    }
+  })
+
+  watch(viewMode, (mode) => {
+    console.log(mode)
+    if (mode === true) {
+      removeCellsLayer()
+      removeHeatLayer()
+      addBountyLayer()
+      addBountyHeatLayer()
+    } else {
+      removeCellsLayer()
+      removeHeatLayer()
+      addCellsLayer()
+      addHeatLayer()
     }
   })
 
@@ -178,8 +196,22 @@
     })
   }
 
+  const addBountySource = () => {
+    map.value.addSource('bounties', {
+      type: 'geojson',
+      data: collections.value.cellsCollection
+    })
+  }
+
   const addHeatSource = () => {
     map.value.addSource('heatmap', {
+      type: 'geojson',
+      data: collections.value.heatmapCollection
+    })
+  }
+
+  const addBountyHeatSource = () => {
+    map.value.addSource('bountyHeatMap', {
       type: 'geojson',
       data: collections.value.heatmapCollection
     })
@@ -201,12 +233,97 @@
     })
   }
 
+  const removeCellsLayer = () => {
+    map.value.removeLayer('cells')
+  }
+
+  const addBountyLayer = () => {
+    map.value.addLayer({
+      id: 'cells',
+      type: 'fill',
+      source: 'bounties',
+      layout: {
+        visibility: 'visible'
+      },
+      paint: {
+        'fill-color': '#F28500',
+        'fill-opacity': 0.5
+      },
+      filter: ['==', '$type', 'Polygon']
+    })
+  }
+
   const addHeatLayer = () => {
     map.value.addLayer(
       {
         id: 'heat',
         type: 'heatmap',
         source: 'heatmap',
+        maxzoom: 10,
+        minzoom: 0,
+        paint: {
+          // Increase the heatmap weight based on frequency and property magnitude
+          'heatmap-weight': ['interpolate', ['linear'], ['get', 'device_count'], 0, 0, 1000, 1000],
+          // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+          // Begin color ramp at 0-stop with a 0-transparancy color
+          // to create a blur-like effect.
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0,
+            'rgba(33.0, 102.0, 172.0, 0.0)',
+            0.2,
+            'rgb(103.0, 169.0, 207.0)',
+            0.4,
+            'rgba(162.0, 187.0, 201.0, 0.85)',
+            0.6,
+            'rgba(149.0, 153.0, 189.0, 0.85)',
+            0.8,
+            'rgb(103.0, 118.0, 247.0)',
+            1,
+            'rgb(0.0, 255.0, 206.0)'
+          ],
+          // Adjust the heatmap radius by zoom level
+          'heatmap-radius': {
+            stops: [
+              [0, 2],
+              [9, 20]
+            ]
+          },
+          // Transition from heatmap to circle layer by zoom level
+          'heatmap-opacity': [
+            'interpolate',
+            ['exponential', 0.5],
+            // ["linear"],
+            ['zoom'],
+            0,
+            1.0,
+            8,
+            0.9,
+            9,
+            0.5,
+            9.5,
+            0.1,
+            10,
+            0.0
+          ]
+        }
+      },
+      'waterway-label'
+    )
+  }
+
+  const removeHeatLayer = () => {
+    map.value.removeLayer('heat')
+  }
+
+  const addBountyHeatLayer = () => {
+    map.value.addLayer(
+      {
+        id: 'heat',
+        type: 'heatmap',
+        source: 'bountyHeatMap',
         maxzoom: 10,
         minzoom: 0,
         paint: {
@@ -323,6 +440,7 @@
         }
       })
     }
+    let color = viewMode.value ? '#FF7900' : '#6ca1f5'
     // check if layer already exists
     if (!map.value.getLayer(`outline${cellIndex}`)) {
       // create layer
@@ -332,7 +450,7 @@
         source: `outline${cellIndex}`,
         layout: {},
         paint: {
-          'line-color': '#6ca1f5',
+          'line-color': color,
           'line-width': 3.5
         }
       })
@@ -479,6 +597,41 @@
       if (!smBreakpoint.value) {
         addNavControlOnMap()
       }
+
+      // map.value.addSource('points', {
+      //       'type': 'geojson',
+      //       'data': {
+      //           'type': 'FeatureCollection',
+      //           'features': [
+      //               {
+      //                   'type': 'Feature',
+      //                   'geometry': {
+      //                       'type': 'Point',
+      //                       'coordinates': [-74.5, 40]
+      //                   },
+      //                   'properties': {
+      //                       'title': 'Hello World'
+      //                   }
+      //               },
+      //               // Add more points as needed
+      //           ]
+      //       }
+      //   });
+
+      //   // Add a symbol layer to display the text
+      //   map.value.addLayer({
+      //       'id': 'text-layer',
+      //       'type': 'symbol',
+      //       'source': 'points',
+      //       'minzoom': 8,
+      //       'layout': {
+      //           'text-field': ['get', 'title'], // Use the 'title' property for the text
+      //           'text-size': 24 // Adjust the size as needed
+      //       },
+      //       'paint': {
+      //           'text-color': '#000000' // Adjust the color as needed
+      //       }
+      //   });
       // add geolocate button
       addGeolocateControlOnMap()
       // create map collections
@@ -488,6 +641,8 @@
       // add sources to map
       await addCellsSource()
       await addHeatSource()
+      await addBountySource()
+      await addBountyHeatSource()
       // add layers to map
       await addCellsLayer()
       await addHeatLayer()

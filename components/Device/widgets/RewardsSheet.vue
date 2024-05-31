@@ -50,7 +50,7 @@
   const { fetchRemoteConfig } = useFirebase()
   const { trackGAevent } = useGAevents()
   const remoteConfig = await fetchRemoteConfig()
-  const mainnetShowFlag = ref<boolean>(remoteConfig.feat_mainnet._value === 'true')
+  const mainnetShowFlag = true
   const loading = ref(false)
   // rewards stuff
   const totalStationRewards = ref('')

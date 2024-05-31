@@ -4,14 +4,13 @@ import mapboxgl from 'mapbox-gl'
 const createMap = (mapboxAccessToken: string, mapboxStyle: string) => {
   // default settings
   const zoom = 3
-  const center = [24.162572, 38.667284]
 
   mapboxgl.accessToken = mapboxAccessToken
-
+  console.log(mapboxAccessToken)
   const map = new mapboxgl.Map({
     container: 'map',
     style: mapboxStyle,
-    center,
+    center: [24.162572, 38.667284],
     zoom,
     attributionControl: false,
     maxZoom: 15,

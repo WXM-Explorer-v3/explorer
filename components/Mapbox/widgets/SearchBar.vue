@@ -56,6 +56,11 @@
         }
   })
 
+  const viewMode = computed({
+    get: () => mapboxStore.viewMode,
+    set: (value) => mapboxStore.toggleView(value),
+  });
+  console.log(viewMode.value)
   // handle user's inputs
   let timer: any = null
   const handleTextFieldInput = (userInput: string) => {
@@ -279,7 +284,7 @@
 </script>
 
 <template>
-  <div :style="searchBarStyles" class="d-flex align-start">
+  <div :style="searchBarStyles" class="d-flex align-center">
     <VForm
       class="ma-0 pa-0"
       style="width: 100%"
@@ -288,6 +293,13 @@
       <VRow class="ma-0 pa-0">
         <VCol class="ma-0 pa-0" cols="12">
           <VSheet class="d-flex align-center pr-0" color="transparent" rounded="xl">
+            <v-switch
+              v-model="viewMode"
+              :label="viewMode ? 'Bounty View' : 'Normal View'"
+              inset
+              class="d-flex align-center"
+              color="#31364A"
+            ></v-switch>
             <v-text-field
               v-model="textFieldModel"
               v-click-outside="closeResults"

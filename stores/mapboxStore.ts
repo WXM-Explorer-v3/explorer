@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 export const useMapboxStore = defineStore('MapboxStore', {
   state: () => {
     return {
+      viewMode: false,
       collections: null,
       initMapPositionEvent: null,
       searchedDeviceToFly: null,
@@ -10,6 +11,7 @@ export const useMapboxStore = defineStore('MapboxStore', {
     }
   },
   getters: {
+    getView: (state) => state.viewMode,
     getCollections: (state) => state.collections,
     getInitMapPositionEvent: (state) => state.initMapPositionEvent,
     getSearchedDeviceToFly: (state) => state.searchedDeviceToFly,
@@ -17,6 +19,9 @@ export const useMapboxStore = defineStore('MapboxStore', {
   },
 
   actions: {
+    toggleView(value) {
+      this.viewMode = value
+    },
     fillCollections(calcedCollections) {
       this.collections = calcedCollections
     },

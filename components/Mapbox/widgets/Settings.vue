@@ -8,6 +8,10 @@
   import { useSettingsStore } from '~/stores/settingsStore'
   import localStorage from '~/cache/localStorage'
 
+  import { useWeb3Modal } from '@web3modal/ethers/vue'
+
+  const modal = useWeb3Modal()
+
   interface Props {
     showSettings?: boolean
   }
@@ -224,6 +228,14 @@
           <span class="ml-2 text-text" style="font-weight: 700">{{ settingsMenuHeader }}</span>
         </VCardTitle>
         <VCardText class="pa-0" style="z-index: 99999">
+
+          <button @click="modal.open()" class="pt-4 pb-4 px-4 mb-4 text-subtitle-1 text--text"
+            :style="{
+              'background-color': layer1Color,
+              'borderRadius': '8px',
+              'font-weight': 700,
+              'width': '100%'
+            }">Connect Wallet</button>
           <!-- -------------------- Display section ---------------------->
 
           <div

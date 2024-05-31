@@ -34,9 +34,7 @@
   )
 
   // mainnet banner vars
-  const { fetchRemoteConfig } = useFirebase()
-  const remoteConfig = await fetchRemoteConfig()
-  const mainnetShowFlag = ref<boolean>(remoteConfig.feat_mainnet._value === 'true')
+  const mainnetShowFlag = true
   // data days vars
   let dataDaysChartData = reactive([])
   let dataDaysLastAndProgress = reactive({ lastValue: '0', progress: '0' })
@@ -115,6 +113,7 @@
         // pass rewards last tx url
         rewardsLastRunUrl.value = response.tokens.last_tx_hash_url
         // pass rewards contract url
+        console.log(response.contracts)
         rewardsContractUrl.value = response.contracts.rewards_url
         // pass monthly avg tokens
         avgMonthly.value = response.tokens.avg_monthly

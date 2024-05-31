@@ -83,7 +83,7 @@ export default defineNuxtConfig({
           href: 'https://cdnjs.cloudflare.com/ajax/libs/MaterialDesign-Webfont/7.0.96/css/materialdesignicons.min.css'
         },
         {
-          href: `https://kit.fontawesome.com/${config.fontAwesomeProkitKey}.css`,
+          href: `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css`,
           rel: 'stylesheet',
           crossorigin: 'anonymous'
         },

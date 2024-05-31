@@ -10,10 +10,10 @@
 
   const { fetchRemoteConfig } = useFirebase()
   const remoteConfig = await fetchRemoteConfig()
-  const mainnetBannerText = ref<string>(`${remoteConfig.feat_mainnet_message._value}`)
-  const mainnetUrl = ref<string>(`${remoteConfig.feat_mainnet_url._value}`)
+  const mainnetBannerText = ""
+  const mainnetUrl = ""
   const computedBannerText = computed(() => {
-    return mainnetBannerText.value.replaceAll(/\n/g, '<br/>')
+    return ""
   })
 </script>
 

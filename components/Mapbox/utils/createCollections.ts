@@ -1,6 +1,7 @@
 import type { Cell, FeatureCollection } from '../types/mapbox'
 
 const createCellsCollection = (cells: Cell[]): FeatureCollection => {
+  console.log(cells)
   return {
     type: 'FeatureCollection',
     features: cells.map((cell: Cell) => ({
