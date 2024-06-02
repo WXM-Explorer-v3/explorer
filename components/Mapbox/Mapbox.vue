@@ -3,19 +3,24 @@
   import { useDisplay, useTheme } from 'vuetify/lib/framework.mjs'
   import _ from 'lodash'
   import calcedMapboxData from './utils/calcedMapboxData'
+  import getBounties from '../Bounty/utils/getBounties'
   import mapCreation from './utils/mapCreation'
   import StatsButton from './widgets/StatsButton.vue'
   import RefreshSnackbar from './widgets/RefreshSnackbar.vue'
   import SearchBar from './widgets/SearchBar.vue'
   import TrackingConcentComponent from './widgets/TrackingConcentComponent.vue'
   import type { SearchResultLocation, Point, SearchResultDevice, Collections } from './types/mapbox'
+  import type { Collections as BountyCollection } from '../Bounty/types/bounties'
   import { useMapboxStore } from '~/stores/mapboxStore'
   import { useMobileStore } from '~/stores/mobileStore'
+  import { useBountyStore } from '~/stores/bountyStore'
+
   import wxmApi from '~/api/wxmApi'
 
   const config = useRuntimeConfig().public
   const mobileStore = useMobileStore()
   const mapboxStore = useMapboxStore()
+  const bountyStore = useBountyStore()
   const { trackGAevent } = useGAevents()
   const display = useDisplay()
   const theme = useTheme()
@@ -25,6 +30,7 @@
   const map = ref({})
   const mapboxLoading = ref(false)
   const collections = ref<Collections>()
+  const bounties = ref<BountyCollection>()
   const hoverCellId = ref('')
   const clickCellId = ref('')
   const snackbar = ref(false)
@@ -110,14 +116,13 @@
   watch(viewMode, (mode) => {
     console.log(mode)
     if (mode === true) {
-      removeCellsLayer()
       removeHeatLayer()
       addBountyLayer()
       addBountyHeatLayer()
     } else {
-      removeCellsLayer()
+      removeCellsLayer('bounties')
       removeHeatLayer()
-      addCellsLayer()
+      removeText()
       addHeatLayer()
     }
   })
@@ -147,8 +152,8 @@
   const mapsInitialPosition = () => {
     // zoom out to initial position
     map.value.flyTo({
-      center: [24.162572, 38.667284],
-      zoom: 3
+      center: [37.775, -122.4183],
+      zoom: 10
     })
   }
 
@@ -197,9 +202,10 @@
   }
 
   const addBountySource = () => {
+    console.log(bounties.value)
     map.value.addSource('bounties', {
       type: 'geojson',
-      data: collections.value.cellsCollection
+      data: bounties.value?.cellsCollection
     })
   }
 
@@ -213,7 +219,7 @@
   const addBountyHeatSource = () => {
     map.value.addSource('bountyHeatMap', {
       type: 'geojson',
-      data: collections.value.heatmapCollection
+      data: bounties.value?.heatmapCollection
     })
   }
 
@@ -233,13 +239,17 @@
     })
   }
 
-  const removeCellsLayer = () => {
-    map.value.removeLayer('cells')
+  const removeCellsLayer = (id) => {
+    map.value.removeLayer(id)
+  }
+  
+  const removeText = () => {
+    map.value.removeLayer('labels')
   }
 
   const addBountyLayer = () => {
     map.value.addLayer({
-      id: 'cells',
+      id: 'bounties',
       type: 'fill',
       source: 'bounties',
       layout: {
@@ -251,6 +261,22 @@
       },
       filter: ['==', '$type', 'Polygon']
     })
+    map.value.addLayer({
+      'id': 'labels',
+      'type': 'symbol',
+      'source': 'bounties',
+      'layout': {
+          'text-field': ['get', 'amount'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 24,
+          'text-anchor': 'center',
+          'text-offset': [0, 0]
+      },
+      'paint': {
+          'text-color': '#000000'
+      },
+      'minzoom': 10
+  });
   }
 
   const addHeatLayer = () => {
@@ -337,17 +363,17 @@
             ['linear'],
             ['heatmap-density'],
             0,
-            'rgba(33.0, 102.0, 172.0, 0.0)',
+            'rgba(255, 255, 204, 0.0)',  // Very light yellow, almost transparent
             0.2,
-            'rgb(103.0, 169.0, 207.0)',
+            'rgba(255, 237, 160, 0.6)',  // Light yellow with some transparency
             0.4,
-            'rgba(162.0, 187.0, 201.0, 0.85)',
+            'rgba(254, 217, 118, 0.85)', // Medium yellow with more opacity
             0.6,
-            'rgba(149.0, 153.0, 189.0, 0.85)',
+            'rgba(254, 178, 76, 0.85)',  // Yellow-orange with high opacity
             0.8,
-            'rgb(103.0, 118.0, 247.0)',
+            'rgba(253, 141, 60, 0.85)',  // Rich orange with high opacity
             1,
-            'rgb(0.0, 255.0, 206.0)'
+            'rgba(240, 59, 32, 1.0)'     // Deep orange, fully opaque
           ],
           // Adjust the heatmap radius by zoom level
           'heatmap-radius': {
@@ -393,23 +419,26 @@
   const mouseHoverFunctionality = () => {
     // on cell hover
     map.value.on('mousemove', 'cells', (e) => {
-      const currentCell = e.features[0].properties.index
-      // check if current polygon is not the same
-      if (hoverCellId.value !== currentCell) {
-        if (clickCellId.value !== currentCell) {
-          addOutLineLayer(currentCell)
+      if (!viewMode.value) {
+        const currentCell = e.features[0].properties.index
+        // check if current polygon is not the same
+        if (hoverCellId.value !== currentCell) {
+          if (clickCellId.value !== currentCell) {
+            addOutLineLayer(currentCell)
+          }
         }
-      }
-      // check if hovered polygon exist
-      if (hoverCellId.value !== currentCell) {
-        // check if clicked polygon exist
-        if (clickCellId.value !== hoverCellId.value) {
-          // check if cursor moved over map before enter the new polygon
-          if (hoverCellId.value) removeOutLineLayer(hoverCellId.value)
+        // check if hovered polygon exist
+        if (hoverCellId.value !== currentCell) {
+          // check if clicked polygon exist
+          if (clickCellId.value !== hoverCellId.value) {
+            // check if cursor moved over map before enter the new polygon
+            if (hoverCellId.value) removeOutLineLayer(hoverCellId.value)
+          }
         }
+        // set current polygon to hoverPoly
+        hoverCellId.value = currentCell
+
       }
-      // set current polygon to hoverPoly
-      hoverCellId.value = currentCell
     })
     // on hex7 leave
     map.value.on('mouseleave', 'cells', () => {
@@ -467,48 +496,73 @@
     }
   }
 
-  const clickOnMap = () => {
-    // remove outline layer if any
-    if (clickCellId) {
-      removeOutLineLayer(clickCellId.value)
-      clickCellId.value = ''
-    }
-    if (!smBreakpoint.value) {
-      navigateTo('/stats')
+  const clickOnMap = (e) => {
+    if (viewMode.value && map.value.getZoom() >= 2) {
+      map.value.flyTo({
+        center: e.lngLat,
+        zoom: 13
+      })
+      bountyStore.setBountyId(null)
+      bountyStore.setBountyCenter(e.lngLat)
+
+      navigateTo(`/bounties?lat=${e.lngLat.lat}&lng=${e.lngLat.lng}`)
+    } else if (!viewMode.value) {
+      // remove outline layer if any
+      if (clickCellId) {
+        removeOutLineLayer(clickCellId.value)
+        clickCellId.value = ''
+      }
+      if (!smBreakpoint.value) {
+        navigateTo('/stats')
+      }
     }
   }
 
   const clickOnCell = () => {
+    map.value.on('click', 'bounties', (e) =>{
+      e.preventDefault()
+      const coords = JSON.parse(e.features[0].properties.center)
+
+      console.log(bountyStore)
+        bountyStore.setBountyId(e.features[0].properties.id)
+      bountyStore.setBountyCenter(null)
+
+        navigateTo(`/bounties?id=${e.features[0].properties.id}`)
+        map.value.flyTo({
+          center: [coords.lon, coords.lat],
+          zoom: 13
+        })
+    } )
     map.value.on('click', 'cells', (e) => {
       // prevent event bubbling
       e.preventDefault()
       // get cell's center coords
       const coords = JSON.parse(e.features[0].properties.center)
-      // get cell's index
-      const cellIndex = e.features[0].properties.index
-
-      // check if any polygon is already clicked
-      if (clickCellId.value) {
-        // if any remove its outline layer
-        removeOutLineLayer(clickCellId.value)
-      }
-      // else set the new polygon id
-      clickCellId.value = cellIndex
-      // add outline to new polygon
-      addOutLineLayer(clickCellId.value)
-
-      // zoom to cell
-      map.value.flyTo({
-        center: [coords.lon, coords.lat],
-        zoom: 13
-      })
-
-      // navigato to cells page
-      navigateTo(`/cells/${cellIndex}`)
-      mobileStore.setPageState(true)
-
-      // track GA event
-      trackGAevent('explorer_cell', { ITEM_ID: clickCellId.value })
+        // get cell's index
+        const cellIndex = e.features[0].properties.index
+  
+        // check if any polygon is already clicked
+        if (clickCellId.value) {
+          // if any remove its outline layer
+          removeOutLineLayer(clickCellId.value)
+        }
+        // else set the new polygon id
+        clickCellId.value = cellIndex
+        // add outline to new polygon
+        addOutLineLayer(clickCellId.value)
+  
+        // zoom to cell
+        map.value.flyTo({
+          center: [coords.lon, coords.lat],
+          zoom: 13
+        })
+  
+        // navigato to cells page
+        navigateTo(`/cells/${cellIndex}`)
+        mobileStore.setPageState(true)
+  
+        // track GA event
+        trackGAevent('explorer_cell', { ITEM_ID: clickCellId.value })
     })
   }
 
@@ -597,45 +651,17 @@
       if (!smBreakpoint.value) {
         addNavControlOnMap()
       }
-
-      // map.value.addSource('points', {
-      //       'type': 'geojson',
-      //       'data': {
-      //           'type': 'FeatureCollection',
-      //           'features': [
-      //               {
-      //                   'type': 'Feature',
-      //                   'geometry': {
-      //                       'type': 'Point',
-      //                       'coordinates': [-74.5, 40]
-      //                   },
-      //                   'properties': {
-      //                       'title': 'Hello World'
-      //                   }
-      //               },
-      //               // Add more points as needed
-      //           ]
-      //       }
-      //   });
-
-      //   // Add a symbol layer to display the text
-      //   map.value.addLayer({
-      //       'id': 'text-layer',
-      //       'type': 'symbol',
-      //       'source': 'points',
-      //       'minzoom': 8,
-      //       'layout': {
-      //           'text-field': ['get', 'title'], // Use the 'title' property for the text
-      //           'text-size': 24 // Adjust the size as needed
-      //       },
-      //       'paint': {
-      //           'text-color': '#000000' // Adjust the color as needed
-      //       }
-      //   });
       // add geolocate button
       addGeolocateControlOnMap()
       // create map collections
       collections.value = await calcedMapboxData.getCollections()
+      console.log(collections.value?.cellsCollection)
+      bounties.value = await getBounties.getBounties()
+      map.value.flyTo({
+        center: [-122.4183, 37.775],
+        zoom: 10
+      })
+      console.log(bounties.value)
       // error handling on empty collection
       _.isEmpty(collections.value) ? (snackbar.value = true) : (snackbar.value = false)
       // add sources to map
@@ -644,8 +670,13 @@
       await addBountySource()
       await addBountyHeatSource()
       // add layers to map
+      if (viewMode.value) {
+        await addBountyLayer()
+        await addBountyHeatLayer()
+      } else {
+        await addHeatLayer()
+      }
       await addCellsLayer()
-      await addHeatLayer()
       // add mouse functionality
       await mouseFunctionality()
       // add mouse hover functionality
@@ -653,7 +684,7 @@
       // close card if click on map
       await map.value.on('click', (e) => {
         if (e.defaultPrevented) return
-        clickOnMap()
+        clickOnMap(e)
       })
       parseUrl()
 

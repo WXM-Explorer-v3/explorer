@@ -18,11 +18,11 @@
   import wxmApi from '~/api/wxmApi'
   import { useMobileStore } from '~/stores/mobileStore'
 
+
   interface LineChartData {
     ts: string
     value: number
   }
-
   const mobileStore = useMobileStore()
   const display = ref(useDisplay())
   const route = useRoute()
@@ -216,7 +216,6 @@
         "
       >
         <MobileHeader />
-
         <VCardText class="ma-0 pa-0">
           <!------- Loading lottie ------>
           <div

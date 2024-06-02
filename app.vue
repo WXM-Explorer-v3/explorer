@@ -12,20 +12,21 @@
   const { userAgent } = useUserAgent()
   const firebaseId = await getFirebaseId()
 
+
   onBeforeMount(() => {
     wxmApi.setupAxios(config.apiUrl, userAgent, firebaseId)
   })
-
-  // 1. Your WalletConnect Cloud project ID
-  const projectId = 'b2b52b7e4d5dc6aadc5a9d91ed7c3824'
+   // 1. Your WalletConnect Cloud project ID
+   console.log(config.projectId)
+  const projectId = config.projectId
 
   // 2. Set chains
-  const mainnet = {
-    chainId: 1,
-    name: 'Ethereum',
+  const arbSepolia = {
+    chainId: 421614,
+    name: 'Arbitrium Sepolia',
     currency: 'ETH',
-    explorerUrl: 'https://etherscan.io',
-    rpcUrl: 'https://cloudflare-eth.com'
+    explorerUrl: 'https://sepolia.arbiscan.io',
+    rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc'
   }
 
   // 3. Create your application's metadata object
@@ -45,11 +46,12 @@
   // 5. Create a Web3Modal instance
   const modal = createWeb3Modal({
     ethersConfig,
-    chains: [mainnet],
+    chains: [arbSepolia],
     projectId,
     enableAnalytics: true, // Optional - defaults to your Cloud configuration
     enableOnramp: true // Optional - false as default
   })
+ 
 </script>
 
 <template>

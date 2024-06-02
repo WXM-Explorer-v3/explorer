@@ -8,7 +8,7 @@ const config = {
   mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN,
   mapboxStyle: process.env.MAPBOX_STYLE,
   fontAwesomeProkitKey: process.env.FONT_AWESOME_PRO_KIT_KEY,
-  initGoogleServices: process.env.INIT_GOOGLE_SERVICES === 'true'
+  initGoogleServices: process.env.INIT_GOOGLE_SERVICES === 'true',
 }
 
 const configSchema = Joi.object({
@@ -59,7 +59,8 @@ export default defineNuxtConfig({
       firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.FIREBASE_APP_ID,
-      firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID
+      firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID,
+      projectId: process.env.WALLET_PROJECT_ID
     }
   },
   app: {

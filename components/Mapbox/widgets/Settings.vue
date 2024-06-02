@@ -6,9 +6,12 @@
   import themeHandler from './SettingsUtils/theme_handler'
   import units from './SettingsUtils/units'
   import { useSettingsStore } from '~/stores/settingsStore'
+  import { useBountyStore } from '~/stores/bountyStore'
   import localStorage from '~/cache/localStorage'
 
-  import { useWeb3Modal } from '@web3modal/ethers/vue'
+  import { useWeb3Modal, useWeb3ModalAccount } from '@web3modal/ethers/vue'
+import getBounties from '~/components/Bounty/utils/getBounties'
+import { ethers } from 'ethers'
 
   const modal = useWeb3Modal()
 
@@ -24,6 +27,7 @@
   const display = ref(useDisplay())
   const currentTheme = useTheme()
   const settingsStore = useSettingsStore()
+  const bountyStore = useBountyStore()
   const version = ref(useRuntimeConfig().public.version)
   const windowHeight = ref(window.innerHeight)
   const settingsMenuHeader = ref('Settings')
@@ -82,12 +86,18 @@
   })
   const privacySwitch = ref(false)
 
+  const { address, isConnected } = useWeb3ModalAccount()
+
   const smDreakpoint = computed(() => {
     return display.value.smAndDown
   })
 
   const layer1Color = computed(() => {
     return currentTheme.current.value.colors.layer1
+  })
+
+  const balance = computed(() => {
+    return bountyStore.balance
   })
 
   watch(
@@ -195,10 +205,10 @@
       onResize()
     })
     // get units from local storage if any
-    getUnits()
+    getUnits();
+    (async ()=> await getBounties.getBalance(address.value))()
     // get theme from local storage if any
-    theme.value = getTheme()
-
+    theme.value = getTheme();
     // get tracking value
     privacySwitch.value = getTrackingValue()
   })
@@ -235,7 +245,7 @@
               'borderRadius': '8px',
               'font-weight': 700,
               'width': '100%'
-            }">Connect Wallet</button>
+            }">{{isConnected ? (address?.slice(0,3)+ "..." + address?.slice(address.length-4, address.length) + " " + balance + " WXM") : "Connect Wallet"}}</button>
           <!-- -------------------- Display section ---------------------->
 
           <div
