@@ -107,7 +107,7 @@ const getBountyId = computed(() => {
     <VSheet
     color="top"
     style="border-radius: 16px"
-    class="pt-6 mr-2 ml-2"
+    class="pt-6 mr-2 ml-2 pb-6"
     :class="display.smAndDown ? `mb-3` : `mb-4`"
     elevation="4"
   >
@@ -115,15 +115,25 @@ const getBountyId = computed(() => {
         <div class="text-subtitle-1 text-text mb-4" style="font-weight: 700">
               {{ "How to claim?" }}
             </div>
-        <VTextField v-model="amount"
-              :hide-details="true"
-              density="compact"
-              class=""
-              color="darkGrey"
-              base-color="darkGrey"
-              type="number"
-              bg-color="layer1"></VTextField>
-              <button v-on:click="onClick" class="w-100 text-subtitle-1 pt-2 pb-2" style="font-weight: 700">Create</button>
+            <div>1. Download the following script 
+              <a
+                  :href="'https://github.com/parthg1901/wxm-contracts/blob/develop/chainlink-functions/user_request.js'"
+                  target="_blank"
+                  class="text-decoration-none text-blue"
+                >
+                  {{ "View Script" }}
+                  <i class="text-text fa-solid fa-arrow-up-right-from-square"></i>
+                </a></div>
+                <div>2. Login into WXM Api Website and get bearer token from there</div>
+                <div>3. Run the script in the following format - </div>
+                <div style="white-space: nowrap; /* Prevent text from wrapping */
+      overflow-x: auto;    /* Enable horizontal scrolling */
+      overflow-y: hidden;
+      background-color: #3D5F92;"><div>node user_request.js "YOUR_BEARER_TOKEN" "YOUR_DEVICE_ID" "YOUR_REGISTERED_WALLET" "YOUR_PRIVATE_KEY" "BOUNTY_ID"</div>
+</div>
+                <div>4. If eligible, you'll automatically receive the bounty within 2-3 minutes </div>
+                
+
 
       <!-- <div style="font-size: 1.094rem; font-weight: 700" class="text-text pl-2 pt-1">
         {{ "weatherStationDaysCardTitle" }}
